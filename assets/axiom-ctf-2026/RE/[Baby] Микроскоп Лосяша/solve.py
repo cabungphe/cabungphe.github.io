@@ -1,4 +1,4 @@
-# Mảng byte Flag bị mã hóa (lấy từ ảnh unk_555555558080 của bạn)
+# Mảng byte Flag bị mã hóa
 encrypted_flag = [
     0x60, 0x2C, 0x78, 0x2B, 0x1A, 0x51, 0x6C, 0x06, 0x25, 0x58,
     0x7E, 0x60, 0x4E, 0x26, 0x46, 0x46, 0x31, 0x05, 0x20, 0x01,
@@ -16,4 +16,4 @@ for i in range(len(encrypted_flag)):
     decrypted_char = encrypted_flag[i] ^ key[i % len(key)]
     flag += chr(decrypted_char)
 
-print("🎯 Cờ của bạn đây:", flag)
+print("Flag:", flag)
