@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Mảng chứa 128 ký tự hex gốc từ IDA/Ghidra
+# Mảng chứa 128 ký tự hex gốc từ IDA
 TARGET_HASHES = [
     "519ef2c4dc55d3556abf0c41eb1e3c6fdb8f96590a9fcdae9940a17ba9dfc3664ec4de37feeb485f772f6589cdf44201ec92997bd254c1755bf812761f992435",
     "730a5983f1d3af2ca2dedc3ed87fdb0dce96bcc3356cc195658ac10b299ab00364b8a0e2e103c93a703dc9d1fe6e3d186e1a071a290d09e9c67ba5891a2e6188",
