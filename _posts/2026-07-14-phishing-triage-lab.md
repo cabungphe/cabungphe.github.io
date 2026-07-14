@@ -8,19 +8,19 @@ image:
   alt: Home Lab SOC Banner
 ---
 
-##1. Mục tiêu lab
+## 1. Mục tiêu lab
 
-##2. Set up
+## 2. Set up
 
-##3. Tấn công
+## 3. Tấn công
 
-##4. Điều tra
+## 4. Điều tra
 
-###4.1. Tiếp nhận Alert trên ELK
+### 4.1. Tiếp nhận Alert trên ELK
 
-###4.2. Truy vết Email trên máy nạn nhân
+### 4.2. Truy vết Email trên máy nạn nhân
 
-###4.3. Trích xuất IOCs & OSINT
+### 4.3. Trích xuất IOCs & OSINT
 
-##5. Báo cáo
+## 5. Báo cáo
 
