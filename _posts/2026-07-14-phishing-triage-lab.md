@@ -10,7 +10,19 @@ image:
 
 ## 1. Mục tiêu lab
 
+Giả lập một vụ tấn công Phishing từ đầu đến cuối. Đóng vai SOC Tier 1 để phân tích email gốc, trích xuất IOCs và viết Rule trên ELK để bắt hành vi mã độc.
+
 ## 2. Set up
+
+Chuẩn bị sẵn 3 máy ảo `Ubuntu Server`(đã cài sẵn ELK), `Windows Server 2022`, `Kali Linux`.
+
+**Attacker: ** Kali Linux (Chạy GoPhish).
+
+**Nạn nhân: ** Windows Server 2022 (đã cài Sysmon).
+
+**Logging & SIEM: ** Sysmon đẩy log về Elastic Stack (ELK).
+
+**Tạo Rule trên SIEM: **
 
 ## 3. Tấn công
 
