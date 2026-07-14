@@ -11,7 +11,7 @@ image:
 
 ## 1. Mục tiêu lab
 
-Giả lập một vụ tấn công Phishing từ đầu đến cuối. Đóng vai SOC Tier 1 để phân tích email gốc, trích xuất IOCs và viết Rule trên ELK để bắt hành vi mã độc.
+Giả lập một vụ tấn công Phishing. Đóng vai SOC Tier 1 để phân tích email gốc, trích xuất IOCs và viết Rule trên ELK để bắt hành vi mã độc.
 
 ## 2. Set up
 
@@ -54,7 +54,7 @@ Add email của nạn nhân vào đây và Save
 
 * Sending Profiles:
 
-Điền thông tin gmail mồi, password là khối 16 ký tự do Google cấp để xác thực nhanh qua bên thứ 3. Điền xong ở dưới cùng có thể `Send Test Email`.
+Điền thông tin gmail mồi, password là khối 16 ký tự do Google cấp để xác thực nhanh qua bên thứ 3. Điền xong ở dưới cùng có thể bấm `Send Test Email` để kiểm tra xem có thể gửi mail tới mục tiêu chưa.
 
 ![send](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/gophish/send.png)
 
