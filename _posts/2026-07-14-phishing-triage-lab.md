@@ -208,7 +208,35 @@ Kết quả trả về chuỗi 3 event log bám sát vòng đời của mã đ�
 
 ### 4.2. Truy vết Email trên máy nạn nhân
 
+Dựa vào thời điểm tệp xuất hiện trong thư mục `Downloads` lúc 08:45, tôi rà soát hòm thư của nạn nhân (`aduvjp10102010@gmail.com`) và tìm thấy một email mạo danh IT Support có thời gian nhận tương ứng. Tiến hành trích xuất Header và Source Code nguyên bản của email này để bóc tách phương thức tấn công:
+
+![header](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/email/header.png)
+
+* Email Header:
+  * Authentication Bypass: Các cơ chế xác thực email cốt lõi bao gồm `SPF,DKIM,DMARC` đều trả về kết quả `PASS`. Attacker đã sử dụng trực tiếp hạ tầng SMTP của google thay vì dựng máy chủ giả.
+    * `SPF`: tài khoản `galangsumo2@gmail.com` có miền là `gmail.com` -> PASS.
+    * `DKIM`: Trong quá trình gửi mail không bị giữ lại chỉnh sửa gì cả, gói tin vẫn nguyên vẹn, mã Hash không thay đổi -> PASS.
+    * `DMARC`: `SPF` và `DKIM` đã PASS thì hiển nhiên log -> PASS.
+  * Mặc dù bypass cơ chế xác thực mail nhưng dấu vết lại bị lộ ở trường thông tin người gửi. `From` hiển thị rõ `Using gophish`.
+* HTML Source Code: Tiến hành soi mã nguồn của email.
+  * Thuộc tính `href` của thẻ này không trỏ về bất kỳ máy chủ nội bộ nào, mà lộ nguyên hình là một đường dẫn tải trực tiếp không mã hóa: `http://192.168.78.135:8000/Security_Fix.exe`.
+  * Địa chỉ IP (`192.168.78.135`) và tên tệp (`Security_Fix.exe`) trùng khớp hoàn toàn tuyệt đối với dữ liệu mà Sysmon (Event ID 1 & 3) đã ghi nhận trên Kibana. Chuỗi chứng cứ của cuộc tấn công chính thức được khép kín.
+
+![url](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/email/url.png)
+
 ### 4.3. Trích xuất IOCs & OSINT
+
+**Danh sách IOCs (Indicators of Compromise):**
+* **Network IOCs:**
+  * **Attacker/C2 IP:** `192.168.78.135`
+  * **C2 Port:** `4444`
+  * **Malicious URL:** `http://192.168.78.135:8000/Security_Fix.exe`
+* **Host/Endpoint IOCs:**
+  * **File Name:** `Security_Fix.exe`
+  * **File Path:** `C:\Users\Administrator\Downloads\Security_Fix.exe`
+  * **SHA256 Hash:** `2c29987ea16214286db38f55ebd992c1a4bd280b003986a20daebe8fdb26d84e`
+* **Email IOCs:**
+  * **Sender Email:** `galangsumo2@gmail.com`
 
 ## 5. Báo cáo
 
