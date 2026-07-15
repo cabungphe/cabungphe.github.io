@@ -86,48 +86,48 @@ Soạn kịch bản lừa đảo mạo danh nhân viên IT Support, chèn link t
 ![template](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/gophish/template.png)
 
 * Tạo 1 file `payload.c` sau đó biên dịch ra `Security_Fix.exe`:
-```c
+  ```cpp
 
-#include <winsock2.h>
-#include <windows.h>
-#include <stdio.h>
+  #include <winsock2.h>
+  #include <windows.h>
+  #include <stdio.h>
 
-#pragma comment(lib,"ws2_32.lib")
+  #pragma comment(lib,"ws2_32.lib")
 
-int main() {
-    WSADATA wsa;
-    SOCKET s;
-    struct sockaddr_in server;
-    char *message;
+  int main() {
+      WSADATA wsa;
+      SOCKET s;
+      struct sockaddr_in server;
+      char *message;
 
-    // Khởi tạo thư viện mạng của Windows
-    WSAStartup(MAKEWORD(2,2), &wsa);
+      // Khởi tạo thư viện mạng của Windows
+      WSAStartup(MAKEWORD(2,2), &wsa);
 
-    // Tạo socket
-    s = socket(AF_INET, SOCK_STREAM, 0);
+      // Tạo socket
+      s = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Cấu hình địa chỉ đích (Máy Kali của bạn)
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr("192.168.78.135"); 
-    server.sin_port = htons(4444); // Cổng giao tiếp
+      // Cấu hình địa chỉ đích (Máy Kali của bạn)
+      server.sin_family = AF_INET;
+      server.sin_addr.s_addr = inet_addr("192.168.78.135"); 
+      server.sin_port = htons(4444); // Cổng giao tiếp
 
-    // Kết nối về máy Kali
-    if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        return 1; // Thoát nếu không kết nối được
-    }
+      // Kết nối về máy Kali
+      if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0) {
+          return 1; // Thoát nếu không kết nối được
+      }
 
-    // Gửi thông điệp vô hại để tạo log
-    message = "\n[!] CANH BAO: PING TU MAY TARGET WIN2K22 CHO LAB SOC!\n";
-    send(s, message, strlen(message), 0);
+      // Gửi thông điệp vô hại để tạo log
+      message = "\n[!] CANH BAO: PING TU MAY TARGET WIN2K22 CHO LAB SOC!\n";
+      send(s, message, strlen(message), 0);
 
-    // Đóng kết nối và thoát êm đẹp
-    closesocket(s);
-    WSACleanup();
+      // Đóng kết nối và thoát êm đẹp
+      closesocket(s);
+      WSACleanup();
 
-    return 0;
-}
+      return 0;
+  }
 
-```
+  ```
 
 * Campaigns:
 
