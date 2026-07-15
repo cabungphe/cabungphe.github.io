@@ -37,6 +37,10 @@ Chuẩn bị sẵn 3 máy ảo `Ubuntu Server`(đã cài sẵn ELK), `Windows Se
   sudo docker pull gophish/gophish
   sudo docker run -d -p 3333:3333 -p 80:80 --name gophish_lab gophish/gophish
   ```
+  Lần sau mở máy vào lại chỉ cần start docker:
+  ```bash
+  sudo docker start gophish_lab
+  ```
 
 * Lấy mật khẩu để login vào web GoPhish
   ```bash
@@ -86,54 +90,46 @@ Soạn kịch bản lừa đảo mạo danh nhân viên IT Support, chèn link t
 ![template](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/gophish/template.png)
 
 * Tạo 1 file `payload.c` sau đó biên dịch ra `Security_Fix.exe`:
-  ```cpp
+  ```c
+    #include <winsock2.h>
+    #include <windows.h>
+    #include <stdio.h>
 
-  #include <winsock2.h>
-  #include <windows.h>
-  #include <stdio.h>
+    #pragma comment(lib,"ws2_32.lib")
 
-  #pragma comment(lib,"ws2_32.lib")
+    int main() {
+        WSADATA wsa;
+        SOCKET s;
+        struct sockaddr_in server;
+        char *message;
 
-  int main() {
-      WSADATA wsa;
-      SOCKET s;
-      struct sockaddr_in server;
-      char *message;
+        // Khởi tạo thư viện mạng của Windows
+        WSAStartup(MAKEWORD(2,2), &wsa);
 
-      // Khởi tạo thư viện mạng của Windows
-      WSAStartup(MAKEWORD(2,2), &wsa);
+        // Tạo socket
+        s = socket(AF_INET, SOCK_STREAM, 0);
 
-      // Tạo socket
-      s = socket(AF_INET, SOCK_STREAM, 0);
+        // Cấu hình địa chỉ đích (Máy Kali của bạn)
+        server.sin_family = AF_INET;
+        server.sin_addr.s_addr = inet_addr("192.168.78.135"); 
+        server.sin_port = htons(4444); // Cổng giao tiếp
 
-      // Cấu hình địa chỉ đích (Máy Kali của bạn)
-      server.sin_family = AF_INET;
-      server.sin_addr.s_addr = inet_addr("192.168.78.135"); 
-      server.sin_port = htons(4444); // Cổng giao tiếp
+        // Kết nối về máy Kali
+        if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0) {
+            return 1; // Thoát nếu không kết nối được
+        }
 
-      // Kết nối về máy Kali
-      if (connect(s, (struct sockaddr *)&server, sizeof(server)) < 0) {
-          return 1; // Thoát nếu không kết nối được
-      }
+        // Gửi thông điệp vô hại để tạo log
+        message = "\n[!] CANH BAO: PING TU MAY TARGET WIN2K22 CHO LAB SOC!\n";
+        send(s, message, strlen(message), 0);
 
-      // Gửi thông điệp vô hại để tạo log
-      message = "\n[!] CANH BAO: PING TU MAY TARGET WIN2K22 CHO LAB SOC!\n";
-      send(s, message, strlen(message), 0);
+        // Đóng kết nối và thoát êm đẹp
+        closesocket(s);
+        WSACleanup();
 
-      // Đóng kết nối và thoát êm đẹp
-      closesocket(s);
-      WSACleanup();
-
-      return 0;
-  }
-
+        return 0;
+    }
   ```
-
-* Campaigns:
-
-Tạo campaign và launch, email phishing sẽ đuợc gửi tới nạn nhân
-
-![campaign](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/gophish/campaign.png)
 
 * Mở Web Server tại nơi chứa file để nạn nhân tải về(ở đây tôi để file exe ở ngoài Desktop).
   ```python
@@ -150,7 +146,7 @@ Tạo campaign và launch, email phishing sẽ đuợc gửi tới nạn nhân
 * Create 1 rule mới kiểu `Custom query`.
 * Data view chọn `logs-*`.
 * Custom query -> Điền câu lệnh KQL vào.
-  ```kql
+  ```sql
   event.code: 1 AND process.executable: *\\Users\\*\\Downloads\\*.exe
   ```
   `event.code: 1` giúp phát hiện process mới đuợc khởi tạo. Ngoài ra còn có `event.code: 3` phát hiện kết nối mạng, `event.code: 5` là process terminated, `event.code: 11` phát hiện file mới được tạo, và còn nhiều `event.code` khác nữa. Tuy nhiên ở bài lab này tôi mô phỏng lại 1 cuộc Phishing, file mã độc sẽ được tải về máy nạn nhân khi họ click vào link và nằm trong thư mục Downloads mặc định. Trong thực tế, file mã độc tải về thường nằm sâu trong `%AppData%\Roaming` hay `%AppData\Local\Temp%`,... cũng có thể copy file từ `Downloads` sang folder khác rồi xóa bản gốc ở `Downloads` đi,...
@@ -164,6 +160,22 @@ Tạo campaign và launch, email phishing sẽ đuợc gửi tới nạn nhân
 * Create & enable rule.
 
 ## 3. Tấn công
+
+### 3.1. Launch Campaign
+
+Tạo campaign và launch, email phishing sẽ đuợc gửi tới nạn nhân
+
+![campaign](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/gophish/campaign.png)
+
+### 3.2. User nhận mail
+
+![malware](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/email/malware.png)
+
+Khi user click vào link, tệp tin `Security_Fix.exe` được tải về và nằm trong folder `Downloads`. Trên máy chủ Kali ngay lập tức thấy 1 request tải file từ port 8000 đang mở sẵn.
+
+Và khi nạn nhân click thực thi file thì gần như không thấy gì xảy ra cả. Lúc đó file mã độc đã âm thầm chạy, thiết lập kết nối TCP hướng ra ngoài tới trạm lắng nghe Netcat(`port 4444`) trên máy Kali, tín hiệu cảnh báo lập tức hiện lên.
+
+![exec](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/email/execute.png)
 
 ## 4. Điều tra
 
