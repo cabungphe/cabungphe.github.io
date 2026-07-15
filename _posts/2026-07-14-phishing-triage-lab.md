@@ -7,6 +7,7 @@ image:
   path: /assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/image.png
   alt: Home Lab SOC Banner
   Description:
+  
 ---
 
 ## 1. Mục tiêu lab
@@ -86,6 +87,7 @@ Soạn kịch bản lừa đảo mạo danh nhân viên IT Support, chèn link t
 
 * Tạo 1 file `payload.c` sau đó biên dịch ra `Security_Fix.exe`:
 ```c
+
 #include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
@@ -124,6 +126,7 @@ int main() {
 
     return 0;
 }
+
 ```
 
 * Campaigns:
@@ -141,6 +144,24 @@ Tạo campaign và launch, email phishing sẽ đuợc gửi tới nạn nhân
   ```bash
   nc -lvnp 4444
   ```
+
+### 2.2. Thiết lập Detection Rule trên SIEM (Elastic Security)
+
+* Create 1 rule mới kiểu `Custom query`.
+* Data view chọn `logs-*`.
+* Custom query -> Điền câu lệnh KQL vào.
+  ```kql
+  event.code: 1 AND process.executable: *\\Users\\*\\Downloads\\*.exe
+  ```
+  `event.code: 1` giúp phát hiện process mới đuợc khởi tạo. Ngoài ra còn có `event.code: 3` phát hiện kết nối mạng, `event.code: 5` là process terminated, `event.code: 11` phát hiện file mới được tạo, và còn nhiều `event.code` khác nữa. Tuy nhiên ở bài lab này tôi mô phỏng lại 1 cuộc Phishing, file mã độc sẽ được tải về máy nạn nhân khi họ click vào link và nằm trong thư mục Downloads mặc định. Trong thực tế, file mã độc tải về thường nằm sâu trong `%AppData%\Roaming` hay `%AppData\Local\Temp%`,... cũng có thể copy file từ `Downloads` sang folder khác rồi xóa bản gốc ở `Downloads` đi,...
+
+  Câu lệnh KQL trên sẽ giúp phát hiện tiến trình được khởi tạo và thực thi từ folder `Downloads`.
+
+* Đặt tên Rule là `[Phishing] Suspicious Executable from Downloads`.
+* Severity: `High` -> Khoảng trên 70 điểm.
+![about](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/kibana/Rule/about.png)
+* Schedule: Ở đây tôi setting Runs every 1 minute để lát nữa thực thi file có thể bắt được Alert luôn.
+* Create & enable rule.
 
 ## 3. Tấn công
 
