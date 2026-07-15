@@ -149,7 +149,7 @@ Soạn kịch bản lừa đảo mạo danh nhân viên IT Support, chèn link t
   ```sql
   event.code: 1 AND process.executable: *\\Users\\*\\Downloads\\*.exe
   ```
-  `event.code: 1` giúp phát hiện process mới đuợc khởi tạo. Ngoài ra còn có `event.code: 3` phát hiện kết nối mạng, `event.code: 5` là process terminated, `event.code: 11` phát hiện file mới được tạo, và còn nhiều `event.code` khác nữa. Tuy nhiên ở bài lab này tôi mô phỏng lại 1 cuộc Phishing, file mã độc sẽ được tải về máy nạn nhân khi họ click vào link và nằm trong thư mục Downloads mặc định. Trong thực tế, file mã độc tải về thường nằm sâu trong `%AppData%\Roaming` hay `%AppData\Local\Temp%`,... cũng có thể copy file từ `Downloads` sang folder khác rồi xóa bản gốc ở `Downloads` đi,...
+  `event.code: 1` giúp phát hiện process mới đuợc khởi tạo. Ngoài ra còn có `event.code: 3` phát hiện kết nối mạng, `event.code: 5` là process terminated, `event.code: 11` phát hiện file mới được tạo, và còn nhiều `event.code` khác nữa. Tuy nhiên ở bài lab này tôi mô phỏng lại 1 cuộc Phishing, file mã độc sẽ được tải về máy nạn nhân khi họ click vào link và nằm trong thư mục Downloads mặc định. Trong thực tế, file mã độc tải về thường nằm sâu trong `%AppData%\Roaming` hay `%AppData%\Local\Temp`,... cũng có thể copy file từ `Downloads` sang folder khác rồi xóa bản gốc ở `Downloads` đi,...
 
   Câu lệnh KQL trên sẽ giúp phát hiện tiến trình được khởi tạo và thực thi từ folder `Downloads`.
 
@@ -180,6 +180,20 @@ Và khi nạn nhân click thực thi file thì gần như không thấy gì xả
 ## 4. Điều tra
 
 ### 4.1. Tiếp nhận Alert trên ELK
+
+![alert](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/kibana/Alert/alert.png)
+
+Tại giao diện Seccurity Alerts, Rule `[Phishing]Suspicious Executable from Downloads` đã được Trigger. Thu thập được các thông tin sơ bộ ban đầu:
+
+* Máy nạn nhân (`host.name`): `win-server22`.
+* Tài khoản (`user.name`): `Administrator`.
+* Path (`process.executable`): `C:\Users\Administrator\Downloads\Security_Fix.exe`.
+* Tiến trình cha (`process.parent.name`): `explorer.exe`.
+![ksatsobo](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/kibana/Alert/ksatsobo.png)
+
+Chuyển qua giao diện **Kibana Discover**, thiết lập thời gian và truy vấn KQL để gom toàn bộ raw logs liên quan đến tệp khả nghi(`Security_Fix.exe`) trên máy nạn nhân.
+
+![discover](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/kibana/Alert/discover.png)
 
 ### 4.2. Truy vết Email trên máy nạn nhân
 
