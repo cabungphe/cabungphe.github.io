@@ -195,6 +195,17 @@ Chuyển qua giao diện **Kibana Discover**, thiết lập thời gian và truy
 
 ![discover](/assets/Project_SOC_Home_Lab/Phishing_Email_Triage_&_Alert_Handling/kibana/Alert/discover.png)
 
+Kết quả trả về chuỗi 3 event log bám sát vòng đời của mã độc do Sysmon ghi nhận.
+
+* Event ID 1 (Process creation): 
+  * Tệp `Security_Fix.exe` được khởi chạy từ đường dẫn `C:\Users\Administrator\Downloads\`. Việc nằm trong thư mục Downloads chứng tỏ đây là một tệp được tải về từ internet, không thuộc hệ điều hành.
+  * Tiến trình cha (`process.parent.name`) là `explorer.exe`, khẳng định nạn nhân đã trực tiếp tương tác (nhấp đúp chuột) để thực thi tệp thủ công.
+* Event ID 3 (Network Connection):
+  * Ngay khi vừa tiến trình vừa được sinh ra, nó lập tức mở một kết nối mạng hướng ra ngoài (Outbound).
+  * IP & Port đích: Kết nối trỏ về IP lạ `192.168.78.135` qua cổng `4444`. Trong thực tế, các bản cập nhật phần mềm hợp lệ thường giao tiếp qua cổng `80/443` (HTTP/HTTPS). Việc sử dụng cổng `4444` là dấu hiệu đặc trưng (Indicator of Attack) của các công cụ Reverse Shell hoặc C2 Beacon.
+* Event ID 5 (Process Terminated):
+  * Ghi nhận khoảnh khắc tiến trình kết thúc, giúp xác định được thời gian tồn tại (Uptime) của mã độc trên hệ thống để đánh giá mức độ ảnh hưởng.  
+
 ### 4.2. Truy vết Email trên máy nạn nhân
 
 ### 4.3. Trích xuất IOCs & OSINT
