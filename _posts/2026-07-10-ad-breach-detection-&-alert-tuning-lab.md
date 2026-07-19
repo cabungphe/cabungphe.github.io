@@ -48,7 +48,7 @@ Do phiên bản ELK miễn phí bị hạn chế tính năng đối với Prebui
 
     Event ID 10 trên lsass.exe vốn cực kỳ ồn — gần như process nào cũng đụng vào lsass ít nhiều — nên nếu bắt tất cả thì rule sẽ ngập noise ngay từ đầu. Vì trong lab này tôi dump thủ công qua Task Manager, nên tôi chốt luôn điều kiện SourceImage là Taskmgr.exe cho gọn, dù biết ngoài thực tế attacker sẽ không hiền như vậy.
 
-![rule_lsass](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/rule_lassas.png)
+![rule_lsass](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/rule/rule_lassas.png)
 
 ```sql
   event.code: "10" 
@@ -61,7 +61,7 @@ Do phiên bản ELK miễn phí bị hạn chế tính năng đối với Prebui
 
     Phát hiện WMI hoặc Services tự động sinh ra command shell.
 
-![rule_suspicious_command](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/rule_suspicious_command.png)
+![rule_suspicious_command](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/rule/rule_suspicious_command.png)
 
 ```sql
   event.code: "1" 
@@ -73,7 +73,7 @@ Do phiên bản ELK miễn phí bị hạn chế tính năng đối với Prebui
 
     Phát hiện tạo Windows Service mới (Event ID 7045) trỏ về thư mục hệ thống. Dấu hiệu này có thể là phần mềm hợp lệ hoặc công cụ tấn công (ví dụ: PsExec). Cần đối chiếu với Event 4624 (Logon Type 3, NTLM) cùng thời điểm để loại trừ nhiễu.
 
-![impacet](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/impact.png)
+![impacet](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/rule/impact.png)
 
 ```sql
   event.code: "7045" 
@@ -173,3 +173,71 @@ Chạy script nhiễu vừa đề cập đến ở phần 2.3
 ![nhieu](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/win10/nhieu.png)
 
 ## 4. Điều tra
+
+Sau khi kịch bản tấn công và giả lập nhiễu được thực thi, màn hình Kibana Alerts xuất hiện các cảnh báo ở nhiều mức độ (High, Medium). Đóng vai trò SOC Tier 1, nhiệm vụ của tôi là phân tích log để xâu chuỗi sự kiện, phân biệt tín hiệu tấn công thật (True Positive) và báo động giả (False Positive) dựa trên các bằng chứng kỹ thuật (Artifacts).
+
+![alert](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/alert.png)
+
+### 4.1. Xác nhận Credential Dumping trên máy nạn nhân
+
+Cụm cảnh báo đầu tiên xuất hiện là 4 alert **[Custom] LSASS Memory Dump (Credential Theft)** trên máy `nhanvien_pc`.
+
+Tick chọn 4 alert đó, chuyển `status` từ `open` sang `acknownleged` và chuyển 4 alert đó sang `Timelines` để phân tích.
+*   **TargetImage:** `C:\Windows\system32\lsass.exe`
+*   **SourceImage:** `C:\Windows\system32\taskmgr.exe`
+*   **GrantedAccess:** `0x1FFFFF`
+
+![lsass](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/lsass.png)
+
+Việc tiến trình `taskmgr.exe` (Task Manager) chọc thẳng vào bộ nhớ của `lsass.exe` với mã quyền `0x1FFFFF` (PROCESS_ALL_ACCESS - Quyền truy cập tối đa) là bằng chứng không thể chối cãi của một pha tạo file dump bộ nhớ trực tiếp từ giao diện người dùng. 
+
+**Kết luận:** Đây chắc chắn là **True Positive**. Tôi tiến hành chọn cả 4 cảnh báo này, gắn tag `True Positive`, tạo một Case mới `[T1] Credential Access - LSASS Dump via Taskmgr` để báo cáo sự cố, sau đó đóng (Mark as closed) để giải phóng hàng đợi Dashboard.
+
+![case](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/create_case.png)
+
+```text
+  - Tóm tắt: Phát hiện hành vi Credential Dumping (LSASS) qua giao diện vào khoảng 2026/07/19 21:30:08.
+  - Mục tiêu: Máy nhanvien_pc | Tài khoản bị ảnh hưởng: nv1
+  - Chi tiết kỹ thuật: Tiến trình hệ thống taskmgr.exe được sử dụng để truy cập bộ nhớ lsass.exe:
+  SourceImage: C:\Windows\System32\procdump.exe
+  TargetImage: C:\Windows\System32\lsass.exe
+  GrantedAccess: 0x1FFFFF
+  - Hành động đã thực hiện: 
+    + Xác nhận True Positive dựa trên Event ID 10.
+    + Gộp 4 alerts liên quan vào Case này.
+    + Đã đóng (Mark as closed) các alert trên Dashboard để chuyển hướng điều tra bước tiếp theo.
+```
+
+### 4.2. Khảo sát Timeline & Tách nhiễu
+
+Tiếp theo là hàng loạt cảnh báo **Suspicious Command Shell** (Medium) và **Impacket PsExec** (High) trên máy `win-server22`. Để không bị nhầm lẫn, tôi đưa toàn bộ các log liên quan vào module **Timelines**, thiết lập khung thời gian sát với thời điểm nổ alert và phân tích lần lượt từ dưới lên (từ cũ nhất đến mới nhất).
+
+**Bước 1: Phân tích hành vi chạy lệnh & Tạo Service**
+Lần theo dấu vết trên Timeline (từ `21:27:00`), tôi ghi nhận một chuỗi hành động liên tiếp:
+*   Mở powershell để gọi `Get-Service`.
+*   Tiến trình `cmd.exe` gọi `systeminfo`.
+*   Công cụ `sc.exe` thực hiện hành động `delete` dịch vụ có tên `IT_NetworkMonitor`.
+*   Đến `21:28:25`, sau một loạt lệnh `Get-Service`, hệ thống ghi nhận `services.exe` và `C:\Windows\servicing\TrustedInstaller.exe` hoạt động. Ngay sau đó, lệnh create lại `IT_NetworkMonitor` được thực thi cùng với một loạt hành động create/delete tương tự.
+*   Kiểm tra thêm chi tiết của các cảnh báo High liên quan đến `ping.exe`, tôi phát hiện đường dẫn gọi lệnh là `C:\Windows\System32\ping.exe 8.8.8.8` xuất phát từ chính tiến trình tạo dịch vụ.
+
+![IT_NetworkMonitor](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/IT.png)
+
+-> *Kết luận:* Chuỗi hành vi gọi `systeminfo`, `Get-Service` và tạo/xóa service chứa lệnh `ping` hoàn toàn khớp với kịch bản giả lập nhiễu tự động của IT Admin. Đây là **False Positive**.
+
+**Bước 2: Phát hiện Lateral Movement (Pass-the-Hash)**
+Tiếp tục đối chiếu trên Timeline, một điểm bất thường cực kỳ nghiêm trọng xuất hiện lúc `21:28:35.422`
+*   **Source IP:** `192.168.78.135` (Thuộc về máy Kali Linux).
+*   **User:** `Administrator`.
+
+![attack](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/attack.png)
+
+Mở rộng chi tiết các Alert High nổ ra ngay sau thời điểm đăng nhập này, tôi kiểm tra trường `Image/ImagePath` và phát hiện đường dẫn: **`%systemroot%\RNrpcJyb.exe`**.
+Việc một file thực thi mang tên ngẫu nhiên được sinh ra trong thư mục lõi của Windows (`C:\Windows`) ngay sau khi IP lạ đăng nhập thành công chính là Signature (đặc điểm nhận dạng) kinh điển của công cụ `impacket-psexec`. Kẻ tấn công đã sử dụng NTLM Hash thu được từ pha LSASS Dump trước đó để chiếm quyền Server.
+
+-> *Kết luận:* Hành vi đăng nhập từ Kali và sinh ra file `RNrpcJyb.exe` là **True Positive**.
+
+### 4.3. Phân loại và Đóng Alert (Resolution)
+
+Với các bằng chứng rõ ràng từ Timeline, quy trình Triage được dứt điểm như sau:
+1.  **Xử lý Nhiễu (False Positives):** Tick chọn các cảnh báo Medium (gọi `systeminfo`, `Get-Service`) và các cảnh báo High chứa lệnh `ping 8.8.8.8`. Gắn tag `False Positive` và chọn Mark as closed.
+2.  **Xử lý Tấn công (True Positives):** Tick chọn các cảnh báo High liên quan đến hành vi tạo service chứa file `%systemroot%\VCtnVeay.exe`. Gắn tag `True Positive`, đưa chúng vào Case sự cố đang mở (để liên kết thành một chuỗi Kill Chain hoàn chỉnh từ khâu Credential Access sang Lateral Movement), sau đó Mark as closed.
