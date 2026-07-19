@@ -1,6 +1,6 @@
 ---
 title: "Phishing_Email_Triage_&_Alert_Handling"
-date: 2026-07-01
+date: 2026-06-14
 categories: [Write up]
 tags: [SOC]
 image:
