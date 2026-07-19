@@ -168,7 +168,7 @@ Chuỗi hành động tiếp theo của kẻ tấn công:
 
 ### 3.3 Tạo nhiễu
 
-Chạy script nhiễu vừa đề cập đến ở phần 2.3
+Chạy script nhiễu vừa đề cập đến ở phần 2.3 và nhập tài khoản Admin vào.
 
 ![nhieu](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/win10/nhieu.png)
 
@@ -239,5 +239,18 @@ Việc một file thực thi mang tên ngẫu nhiên được sinh ra trong thư
 ### 4.3. Phân loại và Đóng Alert (Resolution)
 
 Với các bằng chứng rõ ràng từ Timeline, quy trình Triage được dứt điểm như sau:
-1.  **Xử lý Nhiễu (False Positives):** Tick chọn các cảnh báo Medium (gọi `systeminfo`, `Get-Service`) và các cảnh báo High chứa lệnh `ping 8.8.8.8`. Gắn tag `False Positive` và chọn Mark as closed.
-2.  **Xử lý Tấn công (True Positives):** Tick chọn các cảnh báo High liên quan đến hành vi tạo service chứa file `%systemroot%\VCtnVeay.exe`. Gắn tag `True Positive`, đưa chúng vào Case sự cố đang mở (để liên kết thành một chuỗi Kill Chain hoàn chỉnh từ khâu Credential Access sang Lateral Movement), sau đó Mark as closed.
+  * Tick chọn các alert medium, kiểm tra trường `CommandLine` thấy chỉ có `cmd.exe /c systeminfo` và `powershell.exe -Command "Get-Service"`.
+  Đó là các nhiễu được tạo ra như kịch bản ban đầu. Gắn tag cho 4 alert medium đó là **False Positive** và Close.
+    ![medium](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/medium.png)
+    
+  * Tick vào các alert high còn lại, kiểm tra trường `ImagePath`.
+    **  Trường hợp chỉ có lệnh ping `C:\Windows\System32\ping.exe 8.8.8.8` thì gắn tag là **False Positive** rồi Close.
+    ![FP](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/FP.png)
+
+    ** Trường hợp `%systemroot%\RNrpcJyb.exe` thì đây chắc chắn là **True Positive** mà vừa phát hiện ban nãy. Gắn tag TP rồi `Add to existing case` mà lúc đầu tạo khi phân tích alert lsass(để liên kết thành một chuỗi Kill Chain hoàn chỉnh từ khâu Credential Access sang Lateral Movement), sau đó Mark as closed.
+    ![TP](/assets/Project_SOC_Home_Lab/Active_Directory_Breach_Detection_Lab/kibana/TP.png)
+
+### 5. Thêm Whitelist (Exception Rules)
+
+
+### 6. Báo cáo
